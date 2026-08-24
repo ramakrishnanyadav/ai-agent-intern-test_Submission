@@ -13,9 +13,9 @@ from src.tools import normalize_order_id
 
 def extract_order_id_from_text(text: str) -> Optional[str]:
     """
-    Extracts an order ID matching pattern ORD-\\d+ from text.
+    Extracts an order ID matching pattern ORD-\\d+ from text with typo/spacing tolerance.
     """
-    match = re.search(r"\bORD-\d+\b", text, re.IGNORECASE)
+    match = re.search(r"\b(?:ORDER|ORD)\s*[-–]?\s*(\d{4})\b", text, re.IGNORECASE)
     if match:
         return normalize_order_id(match.group(0))
     return None
@@ -58,55 +58,34 @@ class SessionManager:
             session.last_order_id = current_order_id
 
         active_order_id = current_order_id or session.last_order_id
-        rewritten = user_message
-        is_ambiguous = False
 
-        # Order property pronouns and follow-up phrases
-        order_property_phrases = [
-            "when will it arrive", "where is it", "get here", "delivery date",
-            "tracking", "tracking number", "carrier", "when was it placed",
-            "placed", "status", "order status", "items", "shipping status"
+        # Anaphora resolution for pronouns: "it", "this order", "my order", "the order", "that order"
+        anaphora_targets = [
+            r"\bwhere\s+is\s+it\b", r"\bwhen\s+will\s+it\s+arrive\b", r"\bstatus\s+of\s+it\b",
+            r"\bwhere\s+is\s+this\s+order\b", r"\bstatus\s+of\s+this\s+order\b",
+            r"\btracking\s+number\s+for\s+it\b", r"\bcarrier\s+for\s+it\b"
         ]
-        has_order_property_intent = any(phrase in msg_lower for phrase in order_property_phrases)
+        is_anaphora = any(re.search(pat, msg_lower) for pat in anaphora_targets)
 
-        # 1. Handle order status / property follow-ups using session active order ID
-        if active_order_id and (has_order_property_intent or "it" in msg_lower.split()):
-            rewritten = f"Where is order {active_order_id} and what is its status, carrier, and delivery estimate?"
-            session.last_topic = "order_status"
+        rewritten = user_message
+        if is_anaphora and active_order_id and active_order_id not in user_message:
+            rewritten = f"What is the status of order {active_order_id}?"
 
-        # 2. Handle international shipping / region follow-ups (e.g. "What about Canada?")
-        elif "canada" in msg_lower and ("shipping" not in msg_lower):
-            if session.last_topic == "shipping" or (session.history and "internationally" in session.history[-1].user_message.lower()):
-                rewritten = "Does Aster & Row ship internationally to Canada, and what is the international shipping delivery timeline and policy?"
-                session.last_region = "Canada"
-                session.last_topic = "shipping"
-
-        # 3. Update session topic from current query
-        if "ship" in msg_lower or "delivery" in msg_lower:
-            session.last_topic = "shipping"
-        elif "return" in msg_lower or "refund" in msg_lower:
-            session.last_topic = "returns"
-        elif "warranty" in msg_lower:
-            session.last_topic = "warranty"
-
-        return rewritten, active_order_id, is_ambiguous
+        return rewritten, active_order_id, False
 
     def record_turn(
         self,
         session: SessionState,
         user_message: str,
-        assistant_message: str,
-        topic: Optional[str] = None,
-        order_id: Optional[str] = None
+        agent_response_text: str
     ):
+        """
+        Records completed turn into session conversation history.
+        """
         turn = ConversationTurn(
             user_message=user_message,
-            assistant_message=assistant_message,
-            topic=topic or session.last_topic,
-            entity=session.last_entity,
-            region=session.last_region,
-            order_id=order_id or session.last_order_id
+            assistant_message=agent_response_text
         )
         session.history.append(turn)
         if len(session.history) > 10:
-            session.history = session.history[-10:]
+            session.history.pop(0)

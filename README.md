@@ -39,7 +39,7 @@ Below is a live terminal recording showing the agent processing all 5 core scena
 | Layer | Technologies & Frameworks | Description / Role |
 | :--- | :--- | :--- |
 | **Core Runtime** | `Python 3.11+`, `Dataclasses`, `Typing` | Strongly typed object model (`AgentResponse`, `SafeOrderResult`, `RetrievalResult`). |
-| **Orchestrator** | `LiteLLM`, `Anthropic Claude`, `Google Gemini`, `OpenAI GPT-4o` | Multi-provider LLM integration with strict 3.0s latency budgets and offline fallback. |
+| **Orchestrator** | `LiteLLM`, `Anthropic Claude`, `Google Gemini 2.0`, `OpenAI GPT-4o` | Multi-provider LLM integration with strict 3.0s latency budgets and offline fallback. |
 | **Retrieval Engine** | `Sparse BM25`, `TF-IDF Weighting`, `Stemmed Tokenizer` | Custom BM25 implementation with heading boosting and active policy precedence. |
 | **Data & Privacy** | `SafeOrderResult DTO`, `Input/Output Regex Scrubbers` | Data-layer field allowlisting preventing customer email/address leakage. |
 | **State & Memory** | `OrderedDict LRU SessionManager` | Bounded in-memory session tracking with anaphora resolution and 1,000-session cap. |
@@ -113,7 +113,7 @@ sequenceDiagram
 
 ## 📊 Empirical Baseline vs. Reliable Agent Benchmark
 
-The repository includes a runnable benchmark comparison script ([`baseline.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/baseline.py)) measuring a naive baseline RAG agent against our reliable enterprise agent ([`eval.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/eval.py)) across identical evaluation harness cases:
+The repository includes a runnable benchmark comparison script ([`baseline.py`](baseline.py)) measuring a naive baseline RAG agent against our reliable enterprise agent ([`eval.py`](eval.py)) across identical evaluation harness cases:
 
 | Category / Dimension | Naive Baseline (`baseline.py`) | Production Agent (`eval.py`) | Key Technical Improvement |
 | :--- | :---: | :---: | :--- |
@@ -149,7 +149,7 @@ ANTHROPIC_API_KEY=
 OPENAI_API_KEY=
 
 # Configurable LLM Model Identifier
-LLM_MODEL=gemini/gemini-1.5-flash
+LLM_MODEL=gemini/gemini-2.0-flash
 ```
 
 ### 3. Execution Commands
@@ -202,38 +202,38 @@ docker run --rm aster-row-agent --query "What is the return window for standard 
 ### Bug 1: Stemming & Pluralization Keyword Mismatch
 - **Reproduction**: Asking *"How long does a customer have to return an unused backpack?"* failed to match chunks titled *"Returns Policy"*.
 - **Root Cause**: Tokenizer performed exact word matching (`returns` != `return`, `backpacks` != `backpack`).
-- **Fix**: Implemented `normalize_token()` in [`src/retrieval.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/src/retrieval.py) for basic English suffix stemming.
-- **Regression Test**: `test_regression_bug1_token_stemming` in [`tests/test_regression.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/tests/test_regression.py).
+- **Fix**: Implemented `normalize_token()` in [`src/retrieval.py`](src/retrieval.py) for basic English suffix stemming.
+- **Regression Test**: `test_regression_bug1_token_stemming` in [`tests/test_regression.py`](tests/test_regression.py).
 
 ### Bug 2: Preamble Heading Chunking Artifacts
 - **Reproduction**: Chunking documents produced empty preamble chunks containing only `# Title`.
 - **Root Cause**: `re.split(r"\n(?=##\s+)", body)` generated a leading section before any `## ` headings.
-- **Fix**: Added preamble line filtering in `chunk_markdown_document()` ([`src/ingestion.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/src/ingestion.py)).
-- **Regression Test**: `test_regression_bug2_preamble_heading_chunking` in [`tests/test_regression.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/tests/test_regression.py).
+- **Fix**: Added preamble line filtering in `chunk_markdown_document()` ([`src/ingestion.py`](src/ingestion.py)).
+- **Regression Test**: `test_regression_bug2_preamble_heading_chunking` in [`tests/test_regression.py`](tests/test_regression.py).
 
 ### Bug 3: Stale Delivery Estimate Leak on Cancelled Orders
 - **Reproduction**: Looking up cancelled order `ORD-1004` reported an estimated delivery date of `August 16, 2026`.
 - **Root Cause**: `orders.json` retained an old `estimated_delivery` value even though `status` was `"cancelled"`.
-- **Fix**: Added status precedence override in [`src/tools.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/src/tools.py): if `status in ('cancelled', 'returned')`, force `delivery_estimate = None`.
-- **Regression Test**: `test_regression_bug3_cancelled_order_stale_eta` in [`tests/test_regression.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/tests/test_regression.py).
+- **Fix**: Added status precedence override in [`src/tools.py`](src/tools.py): if `status in ('cancelled', 'returned')`, force `delivery_estimate = None`.
+- **Regression Test**: `test_regression_bug3_cancelled_order_stale_eta` in [`tests/test_regression.py`](tests/test_regression.py).
 
 ### Bug 4: Cancellation Policy Filename Reference Mismatch
 - **Reproduction**: Retrieval rules for order cancellations referenced `"05-cancellation"`, but the actual filename was `08-order-changes-and-cancellations.md`.
 - **Root Cause**: Hardcoded string mismatch caused the cancellation policy down-weighting branch to be dead code.
-- **Fix**: Corrected filename string to `"08-order-changes-and-cancellations"` in [`src/retrieval.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/src/retrieval.py).
-- **Regression Test**: `test_regression_bug4_cancellation_filename_reference` in [`tests/test_regression.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/tests/test_regression.py).
+- **Fix**: Corrected filename string to `"08-order-changes-and-cancellations"` in [`src/retrieval.py`](src/retrieval.py).
+- **Regression Test**: `test_regression_bug4_cancellation_filename_reference` in [`tests/test_regression.py`](tests/test_regression.py).
 
 ### Bug 5: Unlisted Country Shipping Generalization
 - **Reproduction**: Asking about shipping to France or Vietnam abstained with insufficient evidence because country names outside Canada/Germany were not recognized.
 - **Root Cause**: Exact token matching (`\bship\b`) failed on verb tenses (`"shipped"`, `"delivering"`).
-- **Fix**: Replaced exact token matching with stemmed verb patterns (`r"\b(ship|send|deliver)\w*\b"`) in [`src/retrieval.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/src/retrieval.py).
-- **Regression Test**: `test_regression_bug5_unlisted_country_shipping` in [`tests/test_regression.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/tests/test_regression.py).
+- **Fix**: Replaced exact token matching with stemmed verb patterns (`r"\b(ship|send|deliver)\w*\b"`) in [`src/retrieval.py`](src/retrieval.py).
+- **Regression Test**: `test_regression_bug5_unlisted_country_shipping` in [`tests/test_regression.py`](tests/test_regression.py).
 
 ### Bug 6: Citation Source Mismatch Prevention
 - **Reproduction**: Sources returned included top-k chunks (`10-gift-cards-and-price-adjustments.md`) that were not cited in the answer text.
 - **Root Cause**: `citable_sources` returned all top-k citable chunks rather than filtering to chunks actually referenced.
-- **Fix**: Constrained `actual_cited_sources` in [`src/agent.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/src/agent.py) strictly to chunk filenames referenced in the composed response text.
-- **Regression Test**: `test_regression_bug6_citation_source_mismatch` in [`tests/test_regression.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/tests/test_regression.py).
+- **Fix**: Constrained `actual_cited_sources` in [`src/agent.py`](src/agent.py) strictly to chunk filenames referenced in the composed response text.
+- **Regression Test**: `test_regression_bug6_citation_source_mismatch` in [`tests/test_regression.py`](tests/test_regression.py).
 
 ---
 
@@ -264,4 +264,4 @@ While this implementation achieves **100% evaluation pass rate** and **zero crit
 - **AI Tools Used**: Gemini 3.6 Flash (Medium) via Antigravity IDE for rapid test scaffolding, chunker implementation, and prompt builder structure.
 - **Example Incorrect AI Suggestion**: The AI assistant initially suggested handling PII requests by silently redacting emails and addresses in the response using asterisks (e.g., `a***@example.com`).
 - **Why It Was Incomplete**: Redacting PII silently masks data leakage failures rather than preventing unauthorized data exposure. A customer asking for another user's address should be explicitly **refused** with a `ResponseStatus.REFUSED` status code, rather than receiving redacted text.
-- **How We Corrected It**: Replaced silent inline redaction with explicit **privacy refusal blocking** in [`src/validator.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/src/validator.py) and enforced field isolation at the `SafeOrderResult` tool boundary in [`src/tools.py`](file:///c:/Users/Ramakrishna/OneDrive/Pictures/java/Documents/Projects/Ai-agent/src/tools.py).
+- **How We Corrected It**: Replaced silent inline redaction with explicit **privacy refusal blocking** in [`src/validator.py`](src/validator.py) and enforced field isolation at the `SafeOrderResult` tool boundary in [`src/tools.py`](src/tools.py).

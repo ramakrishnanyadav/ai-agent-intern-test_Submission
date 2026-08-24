@@ -9,8 +9,8 @@ from dataclasses import dataclass
 
 @dataclass
 class AgentConfig:
-    # LLM Settings
-    llm_model: str = os.environ.get("LLM_MODEL", "gemini/gemini-1.5-flash")
+    # LLM Settings (Updated to active gemini-2.0-flash model)
+    llm_model: str = os.environ.get("LLM_MODEL", "gemini/gemini-2.0-flash")
     llm_timeout_seconds: float = 3.0
     llm_num_retries: int = 0
 

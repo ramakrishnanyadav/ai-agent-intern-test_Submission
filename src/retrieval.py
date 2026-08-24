@@ -58,130 +58,122 @@ def analyze_membership_query_intent(query: str) -> str:
         r"\bprior\s+to\s+order\b",
         r"\bdrop(ped)?\b",
         r"\blet\s+.*drop\b",
-        r"\bfree\s+tier\b",
-        r"\b(sister|friend|brother|partner|relative|mother|father|family)\s+has\b",
-        r"\bunder\s+my\s+name\b"
+        r"\baccount\s+under\s+my\s+name\b",
+        r"\bsister\b",
+        r"\bbrother\b",
+        r"\bfriend\b"
     ]
-    is_non_member = any(re.search(pat, q_lower) for pat in non_member_patterns)
+    is_non_member_intent = any(re.search(pat, q_lower) for pat in non_member_patterns)
 
-    # General negation combined with membership terms
-    has_negation = any(neg in q_lower for neg in ["never", "not", "without", "don't", "no ", "lapsed", "expired", "former", "previous", "drop", "dropped", "free tier"])
-    has_loyalty_term = any(term in q_lower for term in ["membership", "loyalty", "trailplus", "subscription", "member", "enrolled"])
+    # Active member intent indicators
+    member_patterns = [
+        r"\bi\s+am\s+a?\s*trailplus",
+        r"\bi\s+have\s+trailplus",
+        r"\bas\s+a?\s*trailplus",
+        r"\bmy\s+trailplus\b",
+        r"\bi'm\s+a?\s*trailplus",
+        r"\btrailplus\s+member\b"
+    ]
+    is_member_intent = any(re.search(pat, q_lower) for pat in member_patterns)
 
-    if has_negation and has_loyalty_term and not re.search(r"\bis\s+active\b", q_lower):
-        is_non_member = True
-
-    # Comparative query indicators
-    is_comparison = any(phrase in q_lower for phrase in [
-        "same return", "same window", "difference between", "compared to", "vs", "versus"
-    ]) and has_loyalty_term
-
-    if is_comparison:
-        return "COMPARISON"
-    elif is_non_member:
+    if is_non_member_intent and not is_member_intent:
         return "STANDARD_CUSTOMER"
-    elif "trailplus" in q_lower or "membership" in q_lower:
+
+    if is_member_intent and not is_non_member_intent:
         return "TRAILPLUS_MEMBER"
-    
+
+    if "trailplus" in q_lower or "membership" in q_lower:
+        return "COMPARISON"
+
     return "NEUTRAL"
 
 
 class KnowledgeBaseRetriever:
     def __init__(self, chunks: List[DocumentChunk]):
         self.chunks = chunks
-        self.doc_token_counts: List[Dict[str, int]] = []
-        self.doc_lengths: List[int] = []
-        self.df: Dict[str, int] = {}
-        self.N = len(chunks)
+        self.doc_len: List[int] = []
+        self.avg_doc_len: float = 0.0
+        self.doc_freqs: Dict[str, int] = {}
+        self.chunk_tokens: List[List[str]] = []
         self._build_index()
 
     def _build_index(self):
+        N = len(self.chunks)
+        if N == 0:
+            return
+
+        total_len = 0
         for chunk in self.chunks:
             tokens = tokenize(f"{chunk.title} {chunk.heading} {chunk.text}")
-            token_counts: Dict[str, int] = {}
-            for t in tokens:
-                token_counts[t] = token_counts.get(t, 0) + 1
-            self.doc_token_counts.append(token_counts)
-            self.doc_lengths.append(len(tokens))
+            self.chunk_tokens.append(tokens)
+            l = len(tokens)
+            self.doc_len.append(l)
+            total_len += l
 
-            # Document frequency
-            unique_tokens = set(tokens)
-            for ut in unique_tokens:
-                self.df[ut] = self.df.get(ut, 0) + 1
+            seen_tokens: Set[str] = set(tokens)
+            for t in seen_tokens:
+                self.doc_freqs[t] = self.doc_freqs.get(t, 0) + 1
+
+        self.avg_doc_len = total_len / N if N > 0 else 0.0
 
     def compute_bm25(self, query: str, k1: float = 1.5, b: float = 0.75) -> List[Tuple[int, float]]:
         query_tokens = tokenize(query)
         if not query_tokens:
             return []
 
-        avg_dl = sum(self.doc_lengths) / max(1, self.N)
-        scores: List[Tuple[int, float]] = []
-
-        q_lower = query.lower()
+        N = len(self.chunks)
         intent = analyze_membership_query_intent(query)
+        q_lower = query.lower()
 
-        is_warranty_query = any(phrase in q_lower for phrase in ["warranty", "guarantee", "lifetime"])
-        is_price_or_giftcard_query = any(phrase in q_lower for phrase in ["gift card", "gift cards", "price adjustment", "price drop", "price went down", "difference", "cheaper now", "flash sale", "expire"])
-        is_product_care_query = any(phrase in q_lower for phrase in ["wash", "washing", "spot-clean", "spot clean", "dry", "tumble dry", "cleaning", "care"])
-        
-        intl_terms = [
-            "canada", "germany", "france", "australia", "japan", "uk", "england",
-            "britain", "spain", "italy", "mexico", "brazil", "kenya", "vietnam", "europe", "asia",
-            "antarctica", "international", "overseas", "foreign", "abroad", "outside us", "outside the us"
-        ]
-        has_intl_country = any(term in q_lower for term in intl_terms)
-        # Stemmed verb matching for ship/send/deliver in any tense (shipped, shipping, sends, delivered, etc.)
-        has_send_to = bool(re.search(r"\b(ship|send|deliver)\w*\b.*\bto\b", q_lower))
-        is_international_query = has_intl_country or (has_send_to and not re.search(r"\b(us|usa|united states|hawaii|alaska|po box|p\.o\. box)\b", q_lower))
+        # International query detection: explicit country or international destination terms
+        intl_countries = ["canada", "germany", "france", "australia", "japan", "kenya", "vietnam", "international", "overseas", "foreign", "antarctica", "europe", "asia"]
+        is_international_query = any(c in q_lower for c in intl_countries)
 
-        is_shipping_timeline_query = any(phrase in q_lower for phrase in [
-            "shipping take", "delivery take", "arrive in", "ship to hawaii", "ship to alaska",
-            "po box", "shipping timeline", "shipping charges", "free shipping", "minimum spend"
-        ]) and not is_international_query
+        is_warranty_query = "warrant" in q_lower or "coverage" in q_lower or "guarante" in q_lower
+        is_price_or_giftcard_query = "gift card" in q_lower or "price adjustment" in q_lower or "sale" in q_lower or "expire" in q_lower
+        is_product_care_query = "care" in q_lower or "wash" in q_lower or "clean" in q_lower or "spot-clean" in q_lower
+        is_domestic_shipping_query = any(term in q_lower for term in ["alaska", "hawaii", "po box", "free shipping", "minimum", "75", "standard shipping", "domestic"]) or (
+            ("how long" in q_lower or "delivery time" in q_lower or "ship" in q_lower) and not is_international_query
+        )
+        is_timeframe_query = "return window" in q_lower or "how long" in q_lower or "timeframe" in q_lower or "days" in q_lower or "send back" in q_lower or "period" in q_lower
+        is_cancellation_query = "cancel" in q_lower or "cancellation" in q_lower or "modify order" in q_lower or "change order" in q_lower
 
-        is_timeframe_query = any(phrase in q_lower for phrase in [
-            "how long", "how many days", "return window", "timeframe", "deadline",
-            "send it back", "send back", "sending something back", "sending back", "return an item",
-            "time to send", "how much time", "get 30 days", "return my order", "return my"
-        ]) and not is_warranty_query and not is_shipping_timeline_query and not is_product_care_query and not is_international_query
-
-        is_cancellation_query = any(phrase in q_lower for phrase in ["cancel", "cancellation", "cancel my order"])
-
+        scores: List[Tuple[int, float]] = []
         for idx, chunk in enumerate(self.chunks):
-            doc_len = self.doc_lengths[idx]
-            doc_counts = self.doc_token_counts[idx]
+            tokens = self.chunk_tokens[idx]
+            l = self.doc_len[idx]
             score = 0.0
 
-            title_tokens = set(tokenize(f"{chunk.title} {chunk.heading}"))
+            tf_map: Dict[str, int] = {}
+            for t in tokens:
+                tf_map[t] = tf_map.get(t, 0) + 1
 
             for qt in query_tokens:
-                if qt in doc_counts:
-                    freq = doc_counts[qt]
-                    doc_freq = self.df.get(qt, 0)
-                    idf = math.log((self.N - doc_freq + 0.5) / (doc_freq + 0.5) + 1.0)
-                    tf_norm = (freq * (k1 + 1)) / (freq + k1 * (1 - b + b * (doc_len / avg_dl)))
-                    
-                    term_score = idf * tf_norm
-                    if qt in title_tokens:
-                        term_score *= 2.0
-                    score += term_score
+                if qt in tf_map:
+                    df = self.doc_freqs.get(qt, 0)
+                    idf = math.log((N - df + 0.5) / (df + 0.5) + 1.0)
+                    tf = tf_map[qt]
+                    num = tf * (k1 + 1.0)
+                    den = tf + k1 * (1.0 - b + b * (l / (self.avg_doc_len or 1.0)))
+                    score += idf * (num / den)
 
-            # Apply intent-guided domain authority weighting
+            # Heading boost for exact section match
+            heading_tokens = tokenize(chunk.heading)
+            for qt in query_tokens:
+                if qt in heading_tokens:
+                    score *= 1.5
+
             if intent == "STANDARD_CUSTOMER":
-                if "01-returns" in chunk.filename:
+                if "01-returns" in chunk.filename and "standard" in chunk.text.lower():
                     score *= 4.0
-                    if "window" in chunk.heading.lower():
-                        score *= 5.0
                 elif "09-trailplus" in chunk.filename:
-                    score *= 0.05
+                    score *= 0.1
 
             elif intent == "TRAILPLUS_MEMBER":
                 if "09-trailplus" in chunk.filename:
-                    score *= 5.0
-
-            elif intent == "COMPARISON":
-                if "01-returns" in chunk.filename or "09-trailplus" in chunk.filename:
-                    score *= 3.0
+                    score *= 4.0
+                elif "01-returns" in chunk.filename and "trailplus" not in chunk.heading.lower():
+                    score *= 0.3
 
             if is_warranty_query and "07-warranty" in chunk.filename:
                 score *= 8.0
@@ -192,7 +184,7 @@ class KnowledgeBaseRetriever:
             if is_product_care_query and "11-product-care" in chunk.filename:
                 score *= 8.0
 
-            if is_shipping_timeline_query and "05-domestic" in chunk.filename:
+            if is_domestic_shipping_query and "05-domestic" in chunk.filename:
                 score *= 8.0
 
             if is_timeframe_query:

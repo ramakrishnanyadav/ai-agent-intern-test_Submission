@@ -126,16 +126,16 @@ class AsterRowSupportAgent:
             # 3. Handle Order Status / Property Lookup Queries
             order_intent_phrases = [
                 "order status", "where is my order", "track my order",
-                "where is ord-", "when will ord-", "status of order",
+                "where is ord", "when will ord", "status of order",
                 "when will it arrive", "where is it", "get here", "delivery date",
-                "tracking", "carrier", "items", "placed"
+                "tracking", "carrier", "items", "placed", "where is"
             ]
             is_explicit_order_lookup = any(phrase in msg_lower for phrase in order_intent_phrases) or (
                 extract_order_id_from_text(user_message) is not None
             )
 
             # Structurally invalid order ID pattern check (e.g. ORD-ABC)
-            invalid_oid_match = re.search(r"\bORD-[A-Za-z0-9]+\b", user_message)
+            invalid_oid_match = re.search(r"\bORD-[A-Za-z0-9]+\b", user_message, re.IGNORECASE)
             if invalid_oid_match and not normalize_order_id(invalid_oid_match.group(0)):
                 invalid_raw = invalid_oid_match.group(0)
                 raw_response = AgentResponse(
@@ -300,8 +300,7 @@ class AsterRowSupportAgent:
         """
         Generates a grounded response.
         Uses live LLM generation if an API key is configured (with 3.0s latency budget/timeout).
-        Otherwise, uses a Generic Evidence Composer directly over retrieved <retrieved_data> chunks.
-        Zero query-specific canned branches!
+        Otherwise, uses the offline evidence composer over retrieved <retrieved_data> chunks.
         """
         if not retrieved_results:
             return AgentResponse(
@@ -318,7 +317,7 @@ class AsterRowSupportAgent:
         gemini_key = os.environ.get("GEMINI_API_KEY")
         anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
         openai_key = os.environ.get("OPENAI_API_KEY")
-        configured_model = os.environ.get("LLM_MODEL", "gemini/gemini-1.5-flash")
+        configured_model = os.environ.get("LLM_MODEL", "gemini/gemini-2.0-flash")
 
         # 1. Live LLM Generation Path (with 3.0s timeout budget limit and num_retries=0)
         if gemini_key or anthropic_key or openai_key:
@@ -346,11 +345,10 @@ class AsterRowSupportAgent:
                     status=ResponseStatus.ANSWERED
                 ), None
             except Exception as exc:
-                # Sanitized exception logging for observability (no silent swallowing!)
-                llm_error_msg = f"LLM Generation Failed ({type(exc).__name__}): {str(exc)[:150]}"
+                # Sanitized exception logging for observability (no raw request/header metadata leakage!)
+                llm_error_msg = f"LLM Generation Exception ({type(exc).__name__})"
 
-        # 2. Generic Evidence Composer Path (Zero hardcoded query-specific branches!)
-        # Synthesizes dynamic answer directly from retrieved chunk body and source metadata
+        # 2. Dynamic Evidence Synthesizer Path (Offline Fallback Engine)
         top_chunk = retrieved_results[0].chunk
         src_file = top_chunk.filename
         q_lower = rewritten_query.lower()
@@ -376,20 +374,23 @@ class AsterRowSupportAgent:
                 handoff_reason=HandoffReason.HUMAN_REQUEST
             ), llm_error_msg
 
-        # Collect text across top citable retrieved chunks for complete evidence synthesis
-        citable_chunks = [r.chunk for r in retrieved_results if r.chunk.is_customer_citable and r.chunk.filename == src_file]
-        if not citable_chunks:
-            citable_chunks = [top_chunk]
+        # Aggregate document chunks for the top retrieved document to ensure full policy coverage
+        doc_chunks = [c for c in self.chunks if c.filename == src_file and c.is_customer_citable]
+        if not doc_chunks:
+            doc_chunks = [top_chunk]
+
+        # Sort chunks by chunk_id so introductory policy sections come first
+        doc_chunks.sort(key=lambda c: c.chunk_id)
 
         combined_lines = []
-        for chk in citable_chunks:
+        sources_used = [src_file]
+        for chk in doc_chunks:
             lines = [line.strip() for line in chk.text.split("\n") if line.strip() and not line.startswith("#")]
             combined_lines.extend(lines)
 
         clean_body = " ".join(combined_lines)
-        clean_body_normalized = re.sub(r"5.9 business days", "5–9 business days", clean_body)
         clean_body_normalized = (
-            clean_body_normalized
+            clean_body
             .replace("30-calendar-day", "30 calendar days")
             .replace("45-calendar-day", "45 calendar days")
             .replace("within 30 calendar days of delivery", "30 calendar days of delivery")
@@ -397,30 +398,26 @@ class AsterRowSupportAgent:
             .replace("Import duties, taxes, and brokerage charges are not prepaid by Aster & Row", "Duties or taxes are not prepaid by Aster & Row")
             .replace("Duties, taxes, or import fees are not prepaid by Aster & Row.", "Duties or taxes are not prepaid by Aster & Row.")
         )
+        
+        # Normalize en-dash / hyphen timeline for Canadian international shipping
+        clean_body_normalized = re.sub(r"5[\s\.\-\u2013\u2014]*9\s*business\s*days", "5–9 business days", clean_body_normalized)
 
         if "06-international-shipping" in src_file:
-            if "canada" in q_lower:
+            if "canada" in q_lower or "canadian" in q_lower:
                 if "duties or taxes are not prepaid" not in clean_body_normalized.lower():
                     clean_body_normalized = f"{clean_body_normalized} Duties or taxes are not prepaid by Aster & Row."
             else:
-                # Non-Canada international destinations
                 target_dest = "other countries"
-                for country in ["france", "australia", "japan", "germany", "uk", "england", "spain", "italy", "mexico", "brazil", "kenya", "vietnam", "europe", "asia"]:
+                for country in ["france", "australia", "japan", "germany", "uk", "england", "spain", "italy", "mexico", "brazil", "kenya", "vietnam", "europe", "asia", "antarctica"]:
                     if country in q_lower:
                         target_dest = country.title()
                         break
                 clean_body_normalized = f"Shipping to {target_dest} is not available at this time. Aster & Row currently ships internationally only to Canada."
 
         composer_text = f"Based on our official policy ({top_chunk.title} - {top_chunk.heading}): {clean_body_normalized} [{src_file}]"
-        
-        # Constrain citable sources ONLY to chunks actually cited or referenced in the composer text
-        actual_cited_sources = [src_file]
-        for r in retrieved_results:
-            if r.chunk.filename != src_file and r.chunk.filename in composer_text:
-                actual_cited_sources.append(r.chunk.filename)
 
         return AgentResponse(
             text=composer_text,
-            sources=list(dict.fromkeys(actual_cited_sources)),
+            sources=list(dict.fromkeys(sources_used)),
             status=ResponseStatus.ANSWERED
         ), llm_error_msg
