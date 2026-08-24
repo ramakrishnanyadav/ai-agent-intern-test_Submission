@@ -14,8 +14,9 @@ from src.tools import normalize_order_id
 def extract_order_id_from_text(text: str) -> Optional[str]:
     """
     Extracts an order ID matching pattern ORD-\\d+ from text with typo/spacing tolerance.
+    Uses non-backtracking character class regex to prevent catastrophic backtracking.
     """
-    match = re.search(r"\b(?:ORDER|ORD)\s*[-–]?\s*(\d{4})\b", text, re.IGNORECASE)
+    match = re.search(r"\b(?:ORDER|ORD)[\s\-–]*(\d{4})\b", text, re.IGNORECASE)
     if match:
         return normalize_order_id(match.group(0))
     return None
