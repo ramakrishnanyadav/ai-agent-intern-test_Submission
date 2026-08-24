@@ -130,12 +130,14 @@ class KnowledgeBaseRetriever:
         is_international_query = any(c in q_lower for c in intl_countries)
 
         is_warranty_query = "warrant" in q_lower or "coverage" in q_lower or "guarante" in q_lower
-        is_price_or_giftcard_query = "gift card" in q_lower or "price adjustment" in q_lower or "sale" in q_lower or "expire" in q_lower
+        is_price_or_giftcard_query = "gift card" in q_lower or "price adjustment" in q_lower or "flash sale" in q_lower
         is_product_care_query = "care" in q_lower or "wash" in q_lower or "clean" in q_lower or "spot-clean" in q_lower
-        is_domestic_shipping_query = any(term in q_lower for term in ["alaska", "hawaii", "po box", "free shipping", "minimum", "75", "standard shipping", "domestic"]) or (
-            ("how long" in q_lower or "delivery time" in q_lower or "ship" in q_lower) and not is_international_query
+        is_domestic_shipping_query = any(term in q_lower for term in ["alaska", "hawaii", "po box", "free shipping", "minimum", "75", "standard shipping", "domestic", "how long does shipping take", "how long will it take"]) or (
+            ("ship" in q_lower or "delivery" in q_lower) and not is_international_query and "return" not in q_lower
         )
-        is_timeframe_query = "return window" in q_lower or "how long" in q_lower or "timeframe" in q_lower or "days" in q_lower or "send back" in q_lower or "period" in q_lower
+        is_timeframe_query = ("return window" in q_lower or "timeframe" in q_lower or "send back" in q_lower or "period" in q_lower) or (
+            "how long" in q_lower and "ship" not in q_lower and "deliver" not in q_lower
+        )
         is_cancellation_query = "cancel" in q_lower or "cancellation" in q_lower or "modify order" in q_lower or "change order" in q_lower
 
         scores: List[Tuple[int, float]] = []
@@ -165,9 +167,9 @@ class KnowledgeBaseRetriever:
 
             if intent == "STANDARD_CUSTOMER":
                 if "01-returns" in chunk.filename and "standard" in chunk.text.lower():
-                    score *= 4.0
+                    score *= 20.0
                 elif "09-trailplus" in chunk.filename:
-                    score *= 0.1
+                    score *= 0.001
 
             elif intent == "TRAILPLUS_MEMBER":
                 if "09-trailplus" in chunk.filename:
@@ -185,7 +187,7 @@ class KnowledgeBaseRetriever:
                 score *= 8.0
 
             if is_domestic_shipping_query and "05-domestic" in chunk.filename:
-                score *= 8.0
+                score *= 10.0
 
             if is_timeframe_query:
                 if "01-returns" in chunk.filename and intent != "TRAILPLUS_MEMBER":

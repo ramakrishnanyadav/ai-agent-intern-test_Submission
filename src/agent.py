@@ -18,10 +18,10 @@ os.environ["LITELLM_LOG"] = "ERROR"
 
 from src.contracts import (
     AgentResponse, ResponseStatus, HandoffReason, SessionState,
-    TraceEvent, DocumentChunk, RetrievalResult, SafeOrderResult
+    TraceEvent, DocumentChunk, RetrievalResult, SafeOrderResult, Status
 )
 from src.ingestion import load_knowledge_base
-from src.retrieval import KnowledgeBaseRetriever
+from src.retrieval import KnowledgeBaseRetriever, analyze_membership_query_intent
 from src.conflict_detector import normalize_supported_policy_facts, compare_facts
 from src.tools import OrderLookupTool, normalize_order_id
 from src.tool_registry import ToolRegistry
@@ -349,33 +349,24 @@ class AsterRowSupportAgent:
                 llm_error_msg = f"LLM Generation Exception ({type(exc).__name__})"
 
         # 2. Dynamic Evidence Synthesizer Path (Offline Fallback Engine)
-        top_chunk = retrieved_results[0].chunk
+        intent = analyze_membership_query_intent(rewritten_query)
+
+        # Filter strictly to active, customer-citable chunks retrieved by BM25 ranking
+        active_retrieved_chunks = [
+            r.chunk for r in retrieved_results
+            if r.chunk.is_customer_citable and r.chunk.status == Status.ACTIVE
+        ]
+        if intent == "STANDARD_CUSTOMER":
+            active_retrieved_chunks = [c for c in active_retrieved_chunks if "09-trailplus" not in c.filename]
+
+        if not active_retrieved_chunks:
+            active_retrieved_chunks = [retrieved_results[0].chunk]
+
+        top_chunk = active_retrieved_chunks[0]
         src_file = top_chunk.filename
-        q_lower = rewritten_query.lower()
-
-        # Check for prompt injection in retrieved chunks
-        for r in retrieved_results:
-            if "ignore" in r.chunk.text.lower() or "reveal" in r.chunk.text.lower() or "60 days" in q_lower or "migration" in q_lower:
-                src_01 = "01-returns-policy-current.md"
-                return AgentResponse(
-                    text=f"The migration note is not authoritative customer policy. Aster & Row's standard policy is 30 calendar days of delivery unless a valid exception applies, and the agent cannot approve a return [{src_01}].",
-                    sources=[src_01],
-                    status=ResponseStatus.ANSWERED
-                ), llm_error_msg
-
-        # Handle multi-source grounding for damaged final sale items
-        if "final" in q_lower and ("damaged" in q_lower or "broken" in q_lower or "defective" in q_lower or "wrong" in q_lower):
-            src_03 = "03-final-sale-and-promotions.md"
-            src_04 = "04-damaged-or-wrong-items.md"
-            return AgentResponse(
-                text=f"Final sale does not block damaged-item review [{src_03}]. You should report an item that arrived damaged within 7 calendar days of delivery [{src_04}], and Aster & Row will review it. Human review is required before any approval.",
-                sources=list(dict.fromkeys([src_03, src_04])),
-                status=ResponseStatus.ANSWERED,
-                handoff_reason=HandoffReason.HUMAN_REQUEST
-            ), llm_error_msg
 
         # Aggregate document chunks for the top retrieved document to ensure full policy coverage
-        doc_chunks = [c for c in self.chunks if c.filename == src_file and c.is_customer_citable]
+        doc_chunks = [c for c in self.chunks if c.filename == src_file and c.is_customer_citable and c.status == Status.ACTIVE]
         if not doc_chunks:
             doc_chunks = [top_chunk]
 
@@ -391,6 +382,7 @@ class AsterRowSupportAgent:
         clean_body = " ".join(combined_lines)
         clean_body_normalized = (
             clean_body
+            .replace("**", "")
             .replace("30-calendar-day", "30 calendar days")
             .replace("45-calendar-day", "45 calendar days")
             .replace("within 30 calendar days of delivery", "30 calendar days of delivery")
@@ -402,22 +394,16 @@ class AsterRowSupportAgent:
         # Normalize en-dash / hyphen timeline for Canadian international shipping
         clean_body_normalized = re.sub(r"5[\s\.\-\u2013\u2014]*9\s*business\s*days", "5–9 business days", clean_body_normalized)
 
-        if "06-international-shipping" in src_file:
-            if "canada" in q_lower or "canadian" in q_lower:
-                if "duties or taxes are not prepaid" not in clean_body_normalized.lower():
-                    clean_body_normalized = f"{clean_body_normalized} Duties or taxes are not prepaid by Aster & Row."
-            else:
-                target_dest = "other countries"
-                for country in ["france", "australia", "japan", "germany", "uk", "england", "spain", "italy", "mexico", "brazil", "kenya", "vietnam", "europe", "asia", "antarctica"]:
-                    if country in q_lower:
-                        target_dest = country.title()
-                        break
-                clean_body_normalized = f"Shipping to {target_dest} is not available at this time. Aster & Row currently ships internationally only to Canada."
-
         composer_text = f"Based on our official policy ({top_chunk.title} - {top_chunk.heading}): {clean_body_normalized} [{src_file}]"
+
+        # Constrain actual cited sources strictly to sources referenced in composer_text or primary_src
+        actual_cited_sources = [src_file]
+        for src in sources_used:
+            if src != src_file and src in composer_text:
+                actual_cited_sources.append(src)
 
         return AgentResponse(
             text=composer_text,
-            sources=list(dict.fromkeys(sources_used)),
+            sources=list(dict.fromkeys(actual_cited_sources)),
             status=ResponseStatus.ANSWERED
         ), llm_error_msg

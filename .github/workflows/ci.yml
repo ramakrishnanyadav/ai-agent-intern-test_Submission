@@ -10,6 +10,8 @@ jobs:
   test_and_evaluate:
     name: Run Unit Tests & Reliability Evaluation Benchmark
     runs-on: ubuntu-latest
+    env:
+      PYTHONIOENCODING: utf-8
 
     steps:
       - name: Checkout Repository

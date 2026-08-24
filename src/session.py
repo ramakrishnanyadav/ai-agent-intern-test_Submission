@@ -51,6 +51,17 @@ class SessionManager:
         Returns (rewritten_message, active_order_id, is_ambiguous).
         """
         msg_lower = user_message.lower().strip()
+
+        # Extract topics, regions, and order IDs
+        if "ship" in msg_lower or "delivery" in msg_lower or "dispatch" in msg_lower:
+            session.last_topic = "shipping"
+        elif "return" in msg_lower or "refund" in msg_lower:
+            session.last_topic = "returns"
+
+        if "canada" in msg_lower or "canadian" in msg_lower:
+            session.last_region = "canada"
+        elif "germany" in msg_lower:
+            session.last_region = "germany"
         
         # Check for explicit order ID in current turn
         current_order_id = extract_order_id_from_text(user_message)
@@ -70,6 +81,8 @@ class SessionManager:
         rewritten = user_message
         if is_anaphora and active_order_id and active_order_id not in user_message:
             rewritten = f"What is the status of order {active_order_id}?"
+        elif session.last_topic == "shipping" and "shipping" not in msg_lower:
+            rewritten = f"{user_message} (shipping policy)"
 
         return rewritten, active_order_id, False
 
@@ -77,14 +90,31 @@ class SessionManager:
         self,
         session: SessionState,
         user_message: str,
-        agent_response_text: str
+        agent_response_text: str,
+        topic: Optional[str] = None,
+        entity: Optional[str] = None,
+        region: Optional[str] = None,
+        order_id: Optional[str] = None
     ):
         """
         Records completed turn into session conversation history.
         """
+        if topic:
+            session.last_topic = topic
+        if entity:
+            session.last_entity = entity
+        if region:
+            session.last_region = region
+        if order_id:
+            session.last_order_id = order_id
+
         turn = ConversationTurn(
             user_message=user_message,
-            assistant_message=agent_response_text
+            assistant_message=agent_response_text,
+            topic=topic,
+            entity=entity,
+            region=region,
+            order_id=order_id
         )
         session.history.append(turn)
         if len(session.history) > 10:
