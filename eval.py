@@ -490,13 +490,13 @@ def check_source_integrity():
     if len(kb_files) < 14:
         print(f"  Source Integrity              FAIL (Expected 14 KB files, found {len(kb_files)})")
     else:
-        print(f"  Source Integrity              PASS (Zero modifications / untracked files)")
+        print("  Source Integrity              PASS (Zero modifications / untracked files)")
 
     data_files = list(os.listdir("data"))
     if "orders.json" not in data_files:
-        print(f"  Fixture Isolation             FAIL (data/orders.json missing)")
+        print("  Fixture Isolation             FAIL (data/orders.json missing)")
     else:
-        print(f"  Fixture Isolation             PASS (Production code has zero dependency on eval fixtures)")
+        print("  Fixture Isolation             PASS (Production code has zero dependency on eval fixtures)")
 
 
 def run_document_order_randomization_test(agent: AsterRowSupportAgent):
