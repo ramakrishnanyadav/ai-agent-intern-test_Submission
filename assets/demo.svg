@@ -1,56 +1,55 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 840" width="100%" height="100%">
   <defs>
     <style>
-      .bg { fill: #0d1117; rx: 12px; ry: 12px; }
-      .header-bg { fill: #161b22; }
-      .title { fill: #8b949e; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; font-size: 13px; font-weight: 600; }
-      .term-text { font-family: "Fira Code", "Courier New", Courier, monospace; font-size: 13.5px; }
+      .title { fill: #8b949e; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; font-weight: 600; }
+      .term-text { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; font-size: 13.5px; }
       .prompt { fill: #58a6ff; font-weight: bold; }
       .cmd { fill: #f0f6fc; font-weight: 500; }
       .out-key { fill: #79c0ff; font-weight: 500; }
       .out-val { fill: #a5d6ff; }
       .out-str { fill: #7ee787; }
-      .out-success { fill: #56d364; font-weight: bold; }
-      .out-refused { fill: #ff7b72; font-weight: bold; }
-      .out-warn { fill: #ffa657; font-weight: bold; }
+      .out-success { fill: #3fb950; font-weight: bold; }
+      .out-refused { fill: #f85149; font-weight: bold; }
+      .out-warn { fill: #d29922; font-weight: bold; }
       .out-source { fill: #d2a8ff; font-style: italic; }
-      .separator { stroke: #30363d; stroke-width: 1px; stroke-dasharray: 4,4; }
+      .separator { stroke: #30363d; stroke-width: 1px; stroke-dasharray: 4 4; }
 
-      @keyframes typingSequence {
-        0%, 10% { opacity: 0; transform: translateY(5px); }
-        15%, 100% { opacity: 1; transform: translateY(0); }
-      }
-      @keyframes seqStep2 { 0%, 22% { opacity: 0; } 27%, 100% { opacity: 1; } }
-      @keyframes seqStep3 { 0%, 36% { opacity: 0; } 41%, 100% { opacity: 1; } }
-      @keyframes seqStep4 { 0%, 50% { opacity: 0; } 55%, 100% { opacity: 1; } }
-      @keyframes seqStep5 { 0%, 64% { opacity: 0; } 69%, 100% { opacity: 1; } }
-      @keyframes seqStep6 { 0%, 78% { opacity: 0; } 83%, 100% { opacity: 1; } }
-      @keyframes seqStep7 { 0%, 88% { opacity: 0; } 92%, 100% { opacity: 1; } }
+      @keyframes fadeInStep1 { 0%, 5% { opacity: 0; } 12%, 100% { opacity: 1; } }
+      @keyframes fadeInStep2 { 0%, 18% { opacity: 0; } 25%, 100% { opacity: 1; } }
+      @keyframes fadeInStep3 { 0%, 32% { opacity: 0; } 39%, 100% { opacity: 1; } }
+      @keyframes fadeInStep4 { 0%, 46% { opacity: 0; } 53%, 100% { opacity: 1; } }
+      @keyframes fadeInStep5 { 0%, 60% { opacity: 0; } 67%, 100% { opacity: 1; } }
+      @keyframes fadeInStep6 { 0%, 74% { opacity: 0; } 81%, 100% { opacity: 1; } }
+      @keyframes fadeInStep7 { 0%, 86% { opacity: 0; } 93%, 100% { opacity: 1; } }
 
-      .anim-1 { animation: typingSequence 16s ease-in-out infinite; }
-      .anim-2 { animation: seqStep2 16s ease-in-out infinite; }
-      .anim-3 { animation: seqStep3 16s ease-in-out infinite; }
-      .anim-4 { animation: seqStep4 16s ease-in-out infinite; }
-      .anim-5 { animation: seqStep5 16s ease-in-out infinite; }
-      .anim-6 { animation: seqStep6 16s ease-in-out infinite; }
-      .anim-7 { animation: seqStep7 16s ease-in-out infinite; }
+      .step-1 { animation: fadeInStep1 14s ease-in-out infinite; }
+      .step-2 { animation: fadeInStep2 14s ease-in-out infinite; }
+      .step-3 { animation: fadeInStep3 14s ease-in-out infinite; }
+      .step-4 { animation: fadeInStep4 14s ease-in-out infinite; }
+      .step-5 { animation: fadeInStep5 14s ease-in-out infinite; }
+      .step-6 { animation: fadeInStep6 14s ease-in-out infinite; }
+      .step-7 { animation: fadeInStep7 14s ease-in-out infinite; }
     </style>
   </defs>
 
-  <!-- Terminal Window Container -->
-  <rect class="bg" width="920" height="840" />
-  <path class="header-bg" d="M0,12 Q0,0 12,0 L908,0 Q920,0 920,12 L920,40 L0,40 Z" />
+  <!-- Main Background Container -->
+  <rect x="0" y="0" width="920" height="840" rx="12" ry="12" fill="#0d1117" stroke="#30363d" stroke-width="1" />
 
-  <!-- Terminal Control Buttons -->
+  <!-- Top Title Header Bar -->
+  <rect x="0" y="0" width="920" height="40" rx="12" ry="12" fill="#161b22" />
+  <rect x="0" y="20" width="920" height="20" fill="#161b22" />
+  <line x1="0" y1="40" x2="920" y2="40" stroke="#30363d" stroke-width="1" />
+
+  <!-- Window Buttons -->
   <circle cx="22" cy="20" r="6" fill="#ff5f56" />
   <circle cx="42" cy="20" r="6" fill="#ffbd2e" />
   <circle cx="62" cy="20" r="6" fill="#27c93f" />
 
-  <!-- Terminal Window Title -->
+  <!-- Header Title Text -->
   <text x="460" y="25" text-anchor="middle" class="title">bash — Aster &amp; Row Autonomous RAG Agent (Interactive Multi-Query Demo)</text>
 
   <!-- Example 1: Standard Policy Query -->
-  <g class="anim-1" transform="translate(25, 65)">
+  <g class="step-1" transform="translate(25, 65)">
     <text class="term-text">
       <tspan class="prompt">1. Customer Query: </tspan>
       <tspan class="cmd">python cli.py --query "What is the return window for standard items?"</tspan>
@@ -66,7 +65,7 @@
   </g>
 
   <!-- Example 2: Loyalty Membership Extension -->
-  <g class="anim-2" transform="translate(25, 145)">
+  <g class="step-2" transform="translate(25, 145)">
     <text class="term-text">
       <tspan class="prompt">2. Loyalty Query: </tspan>
       <tspan class="cmd">python cli.py --query "I have TrailPlus membership, do I get extra time?"</tspan>
@@ -82,7 +81,7 @@
   </g>
 
   <!-- Example 3: Safe Order Lookup (PII Scrubbed) -->
-  <g class="anim-3" transform="translate(25, 225)">
+  <g class="step-3" transform="translate(25, 225)">
     <text class="term-text">
       <tspan class="prompt">3. Order Status: </tspan>
       <tspan class="cmd">python cli.py --query "Where is ORD-1007 and when will it arrive?"</tspan>
@@ -98,7 +97,7 @@
   </g>
 
   <!-- Example 4: PII Extraction Interception -->
-  <g class="anim-4" transform="translate(25, 305)">
+  <g class="step-4" transform="translate(25, 305)">
     <text class="term-text">
       <tspan class="prompt">4. PII Interception: </tspan>
       <tspan class="cmd">python cli.py --query "Can you give me the billing address and email for ORD-1001?"</tspan>
@@ -114,7 +113,7 @@
   </g>
 
   <!-- Example 5: Unlisted Country Shipping (Machine-Parseable JSON) -->
-  <g class="anim-5" transform="translate(25, 385)">
+  <g class="step-5" transform="translate(25, 385)">
     <text class="term-text">
       <tspan class="prompt">5. International Intent: </tspan>
       <tspan class="cmd">python cli.py --query "Can I get this shipped to Vietnam?" --json</tspan>
@@ -127,7 +126,7 @@
   </g>
 
   <!-- Example 6: Document Conflict Resolution -->
-  <g class="anim-6" transform="translate(25, 495)">
+  <g class="step-6" transform="translate(25, 495)">
     <text class="term-text">
       <tspan class="prompt">6. Policy Conflict: </tspan>
       <tspan class="cmd">python cli.py --query "Can I put the Breeze Tumbler in the dishwasher?"</tspan>
@@ -143,7 +142,7 @@
   </g>
 
   <!-- Example 7: Unsupported Action Intent -->
-  <g class="anim-7" transform="translate(25, 575)">
+  <g class="step-7" transform="translate(25, 575)">
     <text class="term-text">
       <tspan class="prompt">7. Action Intent: </tspan>
       <tspan class="cmd">python cli.py --query "Please cancel my order ORD-1002 immediately"</tspan>
@@ -163,7 +162,7 @@
       <tspan class="prompt">8. Reliability Evaluation Benchmark Suite: </tspan>
       <tspan class="cmd">python eval.py</tspan>
     </text>
-    <rect x="0" y="15" width="870" height="42" fill="#161b22" rx="6" />
+    <rect x="0" y="15" width="870" height="42" fill="#161b22" rx="6" ry="6" stroke="#30363d" stroke-width="1" />
     <text class="term-text" y="41" x="15">
       <tspan class="out-success">✔ OVERALL EVALUATION SCORE : 56/56 (100.0%) PASS — 0 CRITICAL FAILURES</tspan>
     </text>
