@@ -135,7 +135,7 @@ class AsterRowSupportAgent:
             )
 
             # Structurally invalid order ID pattern check (e.g. ORD-ABC)
-            invalid_oid_match = re.search(r"\bORD-[A-Za-z0-9]+\b", user_message, re.IGNORECASE)
+            invalid_oid_match = re.search(r"\bORD-[a-z0-9]+\b", user_message, re.IGNORECASE)
             if invalid_oid_match and not normalize_order_id(invalid_oid_match.group(0)):
                 invalid_raw = invalid_oid_match.group(0)
                 raw_response = AgentResponse(

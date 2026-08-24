@@ -503,9 +503,10 @@ def run_document_order_randomization_test(agent: AsterRowSupportAgent):
     """Verifies that retrieval results are invariant under doc list shuffles."""
     original_chunks = copy.deepcopy(agent.retriever.chunks)
     consistent = True
+    rng = random.SystemRandom()
     for _ in range(10):
         shuffled = copy.deepcopy(original_chunks)
-        random.shuffle(shuffled)
+        rng.shuffle(shuffled)
         agent.retriever.chunks = shuffled
         res = agent.process_message("What is the return window for standard items?")
         if SRC_RETURNS_CURRENT not in res.sources or VAL_30_DAYS not in res.text:
