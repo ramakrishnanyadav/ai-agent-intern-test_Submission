@@ -21,6 +21,16 @@ This repository introduces an **MNC-grade architecture** built on **typed data c
 
 ---
 
+## 📹 Interactive Demo Walkthrough
+
+Below is an animated demonstration showing the agent processing human CLI queries, generating machine-parseable JSON responses, and executing the evaluation suite:
+
+<p align="center">
+  <img src="assets/demo.svg" alt="Aster & Row Support Agent Demo Walkthrough" width="100%"/>
+</p>
+
+---
+
 ## 💻 Tech Stack & Component Ecosystem
 
 | Layer | Technologies & Frameworks | Description / Role |
@@ -118,8 +128,8 @@ The repository includes a runnable benchmark comparison script ([`baseline.py`](
 
 ```bash
 # Clone the repository
-git clone https://github.com/anantgarg/ai-agent-intern-test.git
-cd ai-agent-intern-test
+git clone https://github.com/ramakrishnanyadav/ai-agent-intern-test_Submission.git
+cd ai-agent-intern-test_Submission
 
 # Install dependencies from pinned requirements
 pip install -r requirements.txt
