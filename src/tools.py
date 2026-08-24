@@ -1,6 +1,6 @@
 """
 Order Lookup Tool for Aster & Row Support Agent.
-Loads orders.json, normalizes order IDs, scrubs PII/internal notes,
+Loads orders.json, normalizes order IDs with typo tolerance, scrubs PII/internal notes,
 enforces status precedence, and returns typed SafeOrderResult DTOs.
 """
 
@@ -13,15 +13,24 @@ from src.contracts import SafeOrderResult, OrderItem
 
 def normalize_order_id(order_id_input: str) -> Optional[str]:
     """
-    Normalizes order ID input: strips whitespace, converts to uppercase.
-    Validates against pattern ^ORD-\\d+$.
+    Normalizes order ID input: handles typo/formatting repair (e.g., 'ORD 1001', 'order1001', 'ORD-1001').
+    Strips whitespace, converts to uppercase, and formats as ORD-XXXX.
+    Returns normalized ORD-XXXX string if valid, or None if structurally invalid.
     """
     if not order_id_input:
         return None
     
     cleaned = str(order_id_input).strip().upper()
+    
+    # 1. Direct standard format check: ORD-1007
     if re.match(r"^ORD-\d+$", cleaned):
         return cleaned
+
+    # 2. Format repair for common user variations: "ORD 1001", "ORDER1001", "ORD 1001", "ORDER-1001"
+    repaired = re.sub(r"^(?:ORDER|ORD)[\s\-_]*(\d+)$", r"ORD-\1", cleaned)
+    if re.match(r"^ORD-\d+$", repaired):
+        return repaired
+
     return None
 
 

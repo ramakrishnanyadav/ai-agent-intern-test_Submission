@@ -5,28 +5,39 @@ Parses frontmatter metadata and chunks documents by headings while preserving me
 
 import os
 import re
+import logging
 import yaml
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
 from src.contracts import DocumentChunk, Status, Authority, Visibility
 
+logger = logging.getLogger(__name__)
 
-def parse_frontmatter(content: str) -> Tuple[Dict[str, Any], str]:
+
+def parse_frontmatter(content: str, filename: str = "document.md") -> Tuple[Dict[str, Any], str]:
     """
     Extracts YAML frontmatter from markdown content.
+    Raises ValueError on malformed YAML to prevent silent metadata degradation.
     Returns (frontmatter_dict, body_text).
     """
     pattern = r"^---\s*\n(.*?)\n---\s*\n(.*)$"
     match = re.match(pattern, content, re.DOTALL)
     if not match:
+        logger.warning(f"No YAML frontmatter delimiter found in {filename}")
         return {}, content
     
     yaml_text = match.group(1)
     body_text = match.group(2)
     try:
-        metadata = yaml.safe_load(yaml_text) or {}
-    except Exception:
-        metadata = {}
+        metadata = yaml.safe_load(yaml_text)
+        if metadata is None:
+            metadata = {}
+        elif not isinstance(metadata, dict):
+            raise ValueError(f"Frontmatter in {filename} must parse to a dictionary, got {type(metadata).__name__}")
+    except Exception as exc:
+        logger.error(f"Failed to parse YAML frontmatter in {filename}: {exc}")
+        raise ValueError(f"Malformed YAML frontmatter in {filename}: {exc}") from exc
+
     return metadata, body_text
 
 
@@ -75,7 +86,7 @@ def chunk_markdown_document(
     """
     Chunks a markdown document by headings while preserving metadata.
     """
-    metadata, body = parse_frontmatter(content)
+    metadata, body = parse_frontmatter(content, filename=filename)
     status, authority, visibility = map_metadata_to_enums(metadata, filename)
     
     doc_id = str(metadata.get("document_id", filename))

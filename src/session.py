@@ -1,11 +1,12 @@
 """
 Session Management & Query Rewriter Module for Aster & Row Support Agent.
 Maintains session state across turns, resolves anaphora/follow-ups deterministically,
-and enforces session isolation across user sessions.
+enforces session isolation, and implements bounded LRU session eviction.
 """
 
 import re
 from typing import Optional, Dict, Tuple
+from collections import OrderedDict
 from src.contracts import SessionState, ConversationTurn
 from src.tools import normalize_order_id
 
@@ -21,13 +22,24 @@ def extract_order_id_from_text(text: str) -> Optional[str]:
 
 
 class SessionManager:
-    def __init__(self):
-        self.sessions: Dict[str, SessionState] = {}
+    def __init__(self, max_sessions: int = 1000):
+        self.max_sessions = max_sessions
+        # OrderedDict used for LRU session tracking and bounded memory eviction
+        self.sessions: OrderedDict[str, SessionState] = OrderedDict()
 
     def get_or_create_session(self, session_id: str) -> SessionState:
-        if session_id not in self.sessions:
-            self.sessions[session_id] = SessionState(session_id=session_id)
-        return self.sessions[session_id]
+        if session_id in self.sessions:
+            # Move accessed session to end (most recently used)
+            self.sessions.move_to_end(session_id)
+            return self.sessions[session_id]
+
+        # Enforce max sessions memory cap via oldest session eviction
+        if len(self.sessions) >= self.max_sessions:
+            self.sessions.popitem(last=False)
+
+        session = SessionState(session_id=session_id)
+        self.sessions[session_id] = session
+        return session
 
     def rewrite_query(
         self,

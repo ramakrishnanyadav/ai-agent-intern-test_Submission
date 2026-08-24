@@ -19,13 +19,20 @@ class ToolRegistry:
 
     def check_unsupported_action_intent(self, user_message: str) -> Optional[AgentResponse]:
         """
-        Detects direct action requests (cancel order, change address, issue refund)
+        Detects direct action requests (cancel/terminate order, change address, issue refund)
         and responds with clear limitation statement without claiming completion.
         """
         msg_lower = user_message.lower()
 
-        # Catch direct action requests regardless of polite filler words
-        cancellation_patterns = [r"\bcancel\b", r"\bcancellation\b"]
+        # Catch direct action requests regardless of polite filler words or alternate verbs
+        cancellation_patterns = [
+            r"\bcancel\w*\b",
+            r"\bterminate\w*\b",
+            r"\bback\s+out\s+of\b",
+            r"\bstop\s+(?:my\s+)?order\b",
+            r"\bvoid\s+(?:my\s+)?order\b",
+            r"\bwithdraw\s+(?:my\s+)?order\b"
+        ]
         address_patterns = [r"\bchange\s+(?:my\s+)?address\b", r"\bupdate\s+(?:my\s+)?address\b"]
         refund_patterns = [r"\bissue\s+(?:a\s+)?refund\b", r"\bprocess\s+(?:a\s+)?refund\b", r"\brefund\s+my\b"]
 
