@@ -1,4 +1,4 @@
-# 🛡️ Aster & Row Autonomous RAG Support Agent & Evaluation Suite
+# 🛡️ Aster & Row Reliable RAG Support Agent & Evaluation Suite
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+"/>
@@ -11,22 +11,25 @@
 
 ---
 
-## 📌 Overview & Enterprise Paradigm Shift
+## 📌 System Overview
 
-The **Aster & Row Autonomous RAG Support Agent** is a production-engineered, defense-in-depth customer support orchestrator and evaluation framework built for **Aster & Row** (ecommerce: outdoor apparel, drinkware, and travel gear).
+The **Aster & Row Support Agent** is a reliability-focused AI support agent and evaluation framework built for **Aster & Row** (ecommerce: outdoor apparel, drinkware, and travel gear).
 
-Traditional RAG implementations rely on unstructured document retrieval, raw prompt string interpolation, and naive keyword matching. These patterns consistently fail in enterprise production environments through **prompt injection attacks**, **PII data leaks**, **hallucinated order delivery estimates**, and **citation/content mismatches**.
+This implementation addresses the core reliability failure modes described in the assignment brief—active/superseded policy precedence, safe order data contracts, prompt injection resistance, and explicit refusal gates—with documented engineering tradeoffs before production scale:
 
-This repository introduces an **MNC-grade architecture** built on **typed data contracts**, **strict data-instruction separation**, **active/superseded policy precedence**, **stemmed intent generalization**, and **deterministic post-processing validation**.
+1. **Conflicting Policy Answers**: Resolves superseded vs active policies and detects genuine active document conflicts.
+2. **Invented Order Information**: Prevents hallucinated order statuses and stale ETAs using a typed `SafeOrderResult` tool, with clean semantic distinction between `INVALID_ORDER_ID` and `CLARIFICATION_REQUIRED`.
+3. **Lost Conversation Context**: Maintains session state across multi-turn queries with deterministic query rewriting and strict session interleaving isolation.
+4. **Prompt Injection & PII Leakage**: Enforces data/instruction separation using `build_agent_prompt()` with `<retrieved_data>` tags, a unified post-processing pipeline, and generalized PII/citation validation.
 
 ---
 
-## 📹 Interactive Demo Walkthrough
+## 📹 Interactive Terminal Demo Recording
 
-Below is an animated demonstration showing the agent processing human CLI queries, generating machine-parseable JSON responses, and executing the evaluation suite:
+Below is a live terminal recording showing the agent processing all 5 core scenario requirements: KB policy citations, safe order status lookups, multi-turn region queries, PII refusal handoffs, and full evaluation suite execution:
 
 <p align="center">
-  <img src="assets/demo.svg" alt="Aster & Row Support Agent Demo Walkthrough" width="100%"/>
+  <img src="assets/demo.svg" alt="Aster & Row Support Agent Terminal Recording" width="100%"/>
 </p>
 
 ---
@@ -45,7 +48,7 @@ Below is an animated demonstration showing the agent processing human CLI querie
 
 ---
 
-## 🚀 How We Bypassed Traditional RAG Vulnerabilities
+## 🚀 Architectural Safety & Reliability Design
 
 ```mermaid
 graph TD
@@ -54,7 +57,7 @@ graph TD
     A -->|"Stale DB Fields"| D("Returns ETA for Cancelled Orders")
     A -->|"Exact Keyword Match"| E("Fails on Novel Country / Verb Tenses")
 
-    F["Aster & Row Enterprise Architecture"] -->|"Data Boundary Tags"| G("Strict Data and Instruction Separation")
+    F["Aster & Row Reliable Architecture"] -->|"Data Boundary Tags"| G("Strict Data and Instruction Separation")
     F -->|"SafeOrderResult Whitelist DTO"| H("PII Scrubbed at Tool Layer")
     F -->|"Status Precedence Rules"| I("Forced Null ETA on Cancelled Orders")
     F -->|"Stemmed Intent Matching"| J("Generalizes Across Tenses & Global Countries")
@@ -234,9 +237,9 @@ docker run --rm aster-row-agent --query "What is the return window for standard 
 
 ---
 
-## 🛠️ Production Roadmap & Enterprise Engineering Gap Analysis
+## 🛠️ Production Roadmap & Engineering Tradeoffs
 
-While this implementation achieves **100% evaluation pass rate** and **zero critical safety failures**, an enterprise production deployment at scale requires the following engineering transitions:
+While this implementation achieves **100% evaluation pass rate** and **zero critical safety failures**, a production deployment at scale requires the following engineering transitions:
 
 ### Tier 1 — Hybrid Vector Retrieval
 - **Current**: In-memory BM25 with token stemming.

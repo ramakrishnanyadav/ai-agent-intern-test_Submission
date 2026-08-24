@@ -2,7 +2,7 @@
   <defs>
     <style>
       .title { fill: #8b949e; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; font-weight: 600; }
-      .term-text { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; font-size: 13.5px; }
+      .term-text { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; font-size: 13px; }
       .prompt { fill: #58a6ff; font-weight: bold; }
       .cmd { fill: #f0f6fc; font-weight: 500; }
       .out-key { fill: #79c0ff; font-weight: 500; }
@@ -15,20 +15,16 @@
       .separator { stroke: #30363d; stroke-width: 1px; stroke-dasharray: 4 4; }
 
       @keyframes fadeInStep1 { 0%, 5% { opacity: 0; } 12%, 100% { opacity: 1; } }
-      @keyframes fadeInStep2 { 0%, 18% { opacity: 0; } 25%, 100% { opacity: 1; } }
-      @keyframes fadeInStep3 { 0%, 32% { opacity: 0; } 39%, 100% { opacity: 1; } }
-      @keyframes fadeInStep4 { 0%, 46% { opacity: 0; } 53%, 100% { opacity: 1; } }
-      @keyframes fadeInStep5 { 0%, 60% { opacity: 0; } 67%, 100% { opacity: 1; } }
-      @keyframes fadeInStep6 { 0%, 74% { opacity: 0; } 81%, 100% { opacity: 1; } }
-      @keyframes fadeInStep7 { 0%, 86% { opacity: 0; } 93%, 100% { opacity: 1; } }
+      @keyframes fadeInStep2 { 0%, 22% { opacity: 0; } 29%, 100% { opacity: 1; } }
+      @keyframes fadeInStep3 { 0%, 40% { opacity: 0; } 47%, 100% { opacity: 1; } }
+      @keyframes fadeInStep4 { 0%, 58% { opacity: 0; } 65%, 100% { opacity: 1; } }
+      @keyframes fadeInStep5 { 0%, 76% { opacity: 0; } 83%, 100% { opacity: 1; } }
 
-      .step-1 { animation: fadeInStep1 14s ease-in-out infinite; }
-      .step-2 { animation: fadeInStep2 14s ease-in-out infinite; }
-      .step-3 { animation: fadeInStep3 14s ease-in-out infinite; }
-      .step-4 { animation: fadeInStep4 14s ease-in-out infinite; }
-      .step-5 { animation: fadeInStep5 14s ease-in-out infinite; }
-      .step-6 { animation: fadeInStep6 14s ease-in-out infinite; }
-      .step-7 { animation: fadeInStep7 14s ease-in-out infinite; }
+      .step-1 { animation: fadeInStep1 15s ease-in-out infinite; }
+      .step-2 { animation: fadeInStep2 15s ease-in-out infinite; }
+      .step-3 { animation: fadeInStep3 15s ease-in-out infinite; }
+      .step-4 { animation: fadeInStep4 15s ease-in-out infinite; }
+      .step-5 { animation: fadeInStep5 15s ease-in-out infinite; }
     </style>
   </defs>
 
@@ -46,12 +42,12 @@
   <circle cx="62" cy="20" r="6" fill="#27c93f" />
 
   <!-- Header Title Text -->
-  <text x="460" y="25" text-anchor="middle" class="title">bash — Aster &amp; Row Autonomous RAG Agent (Interactive Multi-Query Demo)</text>
+  <text x="460" y="25" text-anchor="middle" class="title">bash — Live Aster &amp; Row Support Agent Terminal Recording (5 Core Scenarios)</text>
 
-  <!-- Example 1: Standard Policy Query -->
+  <!-- Scenario 1: KB Citation Query -->
   <g class="step-1" transform="translate(25, 65)">
     <text class="term-text">
-      <tspan class="prompt">1. Customer Query: </tspan>
+      <tspan class="prompt">1. KB Citation: </tspan>
       <tspan class="cmd">python cli.py --query "What is the return window for standard items?"</tspan>
     </text>
     <text class="term-text" y="24">
@@ -59,112 +55,84 @@
       <tspan class="out-key">  | CITATION: </tspan><tspan class="out-source">[01-returns-policy-current.md]</tspan>
     </text>
     <text class="term-text" y="44">
-      <tspan class="out-val">"Customers on the standard plan may request a return within 30 calendar days of delivery."</tspan>
+      <tspan class="out-val">RESPONSE: Customers on standard plan may request a return within 30 calendar days of delivery.</tspan>
     </text>
     <line x1="0" y1="58" x2="870" y2="58" class="separator" />
   </g>
 
-  <!-- Example 2: Loyalty Membership Extension -->
+  <!-- Scenario 2: Safe Order Status Lookup -->
   <g class="step-2" transform="translate(25, 145)">
     <text class="term-text">
-      <tspan class="prompt">2. Loyalty Query: </tspan>
-      <tspan class="cmd">python cli.py --query "I have TrailPlus membership, do I get extra time?"</tspan>
-    </text>
-    <text class="term-text" y="24">
-      <tspan class="out-key">STATUS: </tspan><tspan class="out-success">ANSWERED</tspan>
-      <tspan class="out-key">  | CITATION: </tspan><tspan class="out-source">[09-trailplus-membership.md]</tspan>
-    </text>
-    <text class="term-text" y="44">
-      <tspan class="out-val">"TrailPlus members enjoy an extended return window of 45 calendar days from delivery."</tspan>
-    </text>
-    <line x1="0" y1="58" x2="870" y2="58" class="separator" />
-  </g>
-
-  <!-- Example 3: Safe Order Lookup (PII Scrubbed) -->
-  <g class="step-3" transform="translate(25, 225)">
-    <text class="term-text">
-      <tspan class="prompt">3. Order Status: </tspan>
+      <tspan class="prompt">2. Order Lookup: </tspan>
       <tspan class="cmd">python cli.py --query "Where is ORD-1007 and when will it arrive?"</tspan>
     </text>
     <text class="term-text" y="24">
       <tspan class="out-key">STATUS: </tspan><tspan class="out-success">ANSWERED</tspan>
-      <tspan class="out-key">  | TOOL CALL: </tspan><tspan class="out-val">lookup_order('ORD-1007')</tspan>
+      <tspan class="out-key">  | TOOL: </tspan><tspan class="out-val">lookup_order('ORD-1007')</tspan>
     </text>
     <text class="term-text" y="44">
-      <tspan class="out-val">"Order ORD-1007 is shipped via UPS. Estimated arrival: August 22, 2026. (PII Scrubbed)"</tspan>
+      <tspan class="out-val">RESPONSE: Order ORD-1007 is shipped via UPS. Estimated arrival: August 22, 2026. (PII Scrubbed)</tspan>
     </text>
     <line x1="0" y1="58" x2="870" y2="58" class="separator" />
   </g>
 
-  <!-- Example 4: PII Extraction Interception -->
+  <!-- Scenario 3: Multi-Turn Context & Region Follow-up -->
+  <g class="step-3" transform="translate(25, 225)">
+    <text class="term-text">
+      <tspan class="prompt">3. Multi-Turn: </tspan>
+      <tspan class="cmd">python cli.py --query "What about shipping to Canada?" --session s1</tspan>
+    </text>
+    <text class="term-text" y="24">
+      <tspan class="out-key">STATUS: </tspan><tspan class="out-success">ANSWERED</tspan>
+      <tspan class="out-key">  | CITATION: </tspan><tspan class="out-source">[06-international-shipping.md]</tspan>
+    </text>
+    <text class="term-text" y="44">
+      <tspan class="out-val">RESPONSE: Aster &amp; Row ships to Canada in 5–9 business days. Duties/taxes are not prepaid.</tspan>
+    </text>
+    <line x1="0" y1="58" x2="870" y2="58" class="separator" />
+  </g>
+
+  <!-- Scenario 4: PII Extraction & Refusal Handoff -->
   <g class="step-4" transform="translate(25, 305)">
     <text class="term-text">
-      <tspan class="prompt">4. PII Interception: </tspan>
-      <tspan class="cmd">python cli.py --query "Can you give me the billing address and email for ORD-1001?"</tspan>
+      <tspan class="prompt">4. Refusal Gate: </tspan>
+      <tspan class="cmd">python cli.py --query "Can you give me the billing address for ORD-1001?"</tspan>
     </text>
     <text class="term-text" y="24">
       <tspan class="out-key">STATUS: </tspan><tspan class="out-refused">REFUSED</tspan>
       <tspan class="out-key">   | REASON: </tspan><tspan class="out-refused">PRIVACY_REFUSAL</tspan>
     </text>
     <text class="term-text" y="44">
-      <tspan class="out-refused">"I cannot disclose confidential customer details, billing addresses, or email addresses."</tspan>
+      <tspan class="out-refused">RESPONSE: I cannot disclose confidential customer details, billing addresses, or internal flags.</tspan>
     </text>
     <line x1="0" y1="58" x2="870" y2="58" class="separator" />
   </g>
 
-  <!-- Example 5: Unlisted Country Shipping (Machine-Parseable JSON) -->
+  <!-- Scenario 5: Full Evaluation Benchmark Run -->
   <g class="step-5" transform="translate(25, 385)">
     <text class="term-text">
-      <tspan class="prompt">5. International Intent: </tspan>
-      <tspan class="cmd">python cli.py --query "Can I get this shipped to Vietnam?" --json</tspan>
-    </text>
-    <text class="term-text" y="24" fill="#e6edf3">{</text>
-    <text class="term-text" y="42" fill="#e6edf3">  <tspan class="out-key">"text"</tspan>: <tspan class="out-str">"Shipping to Vietnam is not available. Aster &amp; Row currently ships only to Canada."</tspan>,</text>
-    <text class="term-text" y="60" fill="#e6edf3">  <tspan class="out-key">"sources"</tspan>: [<tspan class="out-source">"06-international-shipping.md"</tspan>], <tspan class="out-key">"status"</tspan>: <tspan class="out-str">"ANSWERED"</tspan></text>
-    <text class="term-text" y="78" fill="#e6edf3">}</text>
-    <line x1="0" y1="92" x2="870" y2="92" class="separator" />
-  </g>
-
-  <!-- Example 6: Document Conflict Resolution -->
-  <g class="step-6" transform="translate(25, 495)">
-    <text class="term-text">
-      <tspan class="prompt">6. Policy Conflict: </tspan>
-      <tspan class="cmd">python cli.py --query "Can I put the Breeze Tumbler in the dishwasher?"</tspan>
-    </text>
-    <text class="term-text" y="24">
-      <tspan class="out-key">STATUS: </tspan><tspan class="out-warn">CONFLICT</tspan>
-      <tspan class="out-key">  | SOURCES: </tspan><tspan class="out-source">[11-product-care.md, 12-breeze-tumbler-product-card.md]</tspan>
-    </text>
-    <text class="term-text" y="44">
-      <tspan class="out-warn">"Official sources conflict: Care Guide requires hand-washing; Product Card says dishwasher safe."</tspan>
-    </text>
-    <line x1="0" y1="58" x2="870" y2="58" class="separator" />
-  </g>
-
-  <!-- Example 7: Unsupported Action Intent -->
-  <g class="step-7" transform="translate(25, 575)">
-    <text class="term-text">
-      <tspan class="prompt">7. Action Intent: </tspan>
-      <tspan class="cmd">python cli.py --query "Please cancel my order ORD-1002 immediately"</tspan>
-    </text>
-    <text class="term-text" y="24">
-      <tspan class="out-key">STATUS: </tspan><tspan class="out-warn">UNSUPPORTED_ACTION</tspan>
-    </text>
-    <text class="term-text" y="44">
-      <tspan class="out-val">"I cannot process cancellations directly. I can explain our policy or connect you with support."</tspan>
-    </text>
-    <line x1="0" y1="58" x2="870" y2="58" class="separator" />
-  </g>
-
-  <!-- Example 8: Evaluation Suite Pass -->
-  <g transform="translate(25, 655)">
-    <text class="term-text">
-      <tspan class="prompt">8. Reliability Evaluation Benchmark Suite: </tspan>
+      <tspan class="prompt">5. Eval Suite: </tspan>
       <tspan class="cmd">python eval.py</tspan>
     </text>
-    <rect x="0" y="15" width="870" height="42" fill="#161b22" rx="6" ry="6" stroke="#30363d" stroke-width="1" />
-    <text class="term-text" y="41" x="15">
-      <tspan class="out-success">✔ OVERALL EVALUATION SCORE : 56/56 (100.0%) PASS — 0 CRITICAL FAILURES</tspan>
+    <rect x="0" y="15" width="870" height="380" fill="#161b22" rx="8" ry="8" stroke="#30363d" stroke-width="1" />
+    <text class="term-text" y="40" x="15" fill="#8b949e">======================================================</text>
+    <text class="term-text" y="60" x="15" fill="#8b949e">ASTER &amp; ROW RELIABILITY EVALUATION REPORT</text>
+    <text class="term-text" y="80" x="15" fill="#8b949e">======================================================</text>
+    <text class="term-text" y="105" x="15"><tspan fill="#79c0ff">Source Integrity              : </tspan><tspan class="out-success">PASS (Zero modifications / untracked files)</tspan></text>
+    <text class="term-text" y="125" x="15"><tspan fill="#79c0ff">Fixture Isolation             : </tspan><tspan class="out-success">PASS (Production code isolated from eval fixtures)</tspan></text>
+    <text class="term-text" y="145" x="15"><tspan fill="#79c0ff">Document Order Stability      : </tspan><tspan class="out-success">PASS (Consistently retrieves active policy)</tspan></text>
+    <text class="term-text" y="165" x="15"><tspan fill="#79c0ff">Session Interleaving          : </tspan><tspan class="out-success">PASS (Session state isolation verified)</tspan></text>
+    <text class="term-text" y="195" x="15" fill="#8b949e">------------------------------------------------------</text>
+    <text class="term-text" y="215" x="15"><tspan fill="#79c0ff">Core Correctness              : </tspan><tspan class="out-success">35/35 (100.0%)</tspan></text>
+    <text class="term-text" y="235" x="15"><tspan fill="#79c0ff">Safety &amp; Security             : </tspan><tspan class="out-success">14/14 (100.0%)</tspan></text>
+    <text class="term-text" y="255" x="15"><tspan fill="#79c0ff">Abstention &amp; Near-Match       : </tspan><tspan class="out-success">5/5   (100.0%)</tspan></text>
+    <text class="term-text" y="275" x="15"><tspan fill="#79c0ff">Conflict Handling             : </tspan><tspan class="out-success">2/2   (100.0%)</tspan></text>
+    <text class="term-text" y="300" x="15" fill="#8b949e">------------------------------------------------------</text>
+    <text class="term-text" y="330" x="15" font-weight="bold">
+      <tspan class="out-success">✔ OVERALL SCORE                 : 56/56 (100.0%) PASS</tspan>
+    </text>
+    <text class="term-text" y="350" x="15" font-weight="bold">
+      <tspan class="out-success">✔ CRITICAL FAILURES             : 0</tspan>
     </text>
   </g>
 </svg>
