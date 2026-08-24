@@ -39,15 +39,15 @@ This repository introduces an **MNC-grade architecture** built on **typed data c
 
 ```mermaid
 graph TD
-    A[Traditional Naive RAG] -->|Raw Prompt Interpolation| B(Vulnerable to Prompt Injection)
-    A -->|Unfiltered Tool Output| C(Leaks Customer PII & Internal Notes)
-    A -->|Stale DB Fields| D(Returns ETA for Cancelled Orders)
-    A -->|Exact Keyword Match| E(Fails on Novel Country / Verb Tenses)
+    A["Traditional Naive RAG"] -->|"Raw Prompt Interpolation"| B("Vulnerable to Prompt Injection")
+    A -->|"Unfiltered Tool Output"| C("Leaks Customer PII & Internal Notes")
+    A -->|"Stale DB Fields"| D("Returns ETA for Cancelled Orders")
+    A -->|"Exact Keyword Match"| E("Fails on Novel Country / Verb Tenses")
 
-    F[Aster & Row Enterprise Architecture] -->|Data Boundary Tags <retrieved_data>| G(Strict Data/Instruction Separation)
-    F -->|SafeOrderResult Whitelist DTO| H(PII Scrubbed at Tool Layer)
-    F -->|Status Precedence Rules| I(Forced Null ETA on Cancelled Orders)
-    F -->|Stemmed Intent Matcher r"\b\(ship\|send\|deliver\)\w*\b"| J(Generalizes Across Tenses & Global Countries)
+    F["Aster & Row Enterprise Architecture"] -->|"Data Boundary Tags"| G("Strict Data and Instruction Separation")
+    F -->|"SafeOrderResult Whitelist DTO"| H("PII Scrubbed at Tool Layer")
+    F -->|"Status Precedence Rules"| I("Forced Null ETA on Cancelled Orders")
+    F -->|"Stemmed Intent Matching"| J("Generalizes Across Tenses & Global Countries")
 
     style A fill:#ffcdd2,stroke:#b71c1c,stroke-width:2px;
     style F fill:#c8e6c9,stroke:#1b5e20,stroke-width:2px;
@@ -88,7 +88,7 @@ sequenceDiagram
             Retriever-->>Retriever: Apply Active/Superseded & Conflict Filter
             Retriever-->>PromptBuilder: Return RetrievalResult Chunks
         end
-        PromptBuilder->>LLM: Synthesize Answer (<retrieved_data> Isolated)
+        PromptBuilder->>LLM: Synthesize Answer (Isolated Data Chunks)
         LLM-->>Validator: Raw Response Candidate
         Validator->>Validator: Validate Citations & Scrub PII
         Validator->>Logger: Log Scrubbed Trace Event
